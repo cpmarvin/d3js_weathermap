@@ -1,0 +1,419 @@
+
+<head>
+
+  <title>Network Weathermap</title>
+<script src="https://cdn.plot.ly/plotly-1.8.0.min.js"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://d3js.org/d3.v3.js"></script>
+
+  
+
+</head>
+
+<style>
+
+.node {
+  stroke: #fff;
+  stroke-width: 1.5px;
+
+  -webkit-transform: translate(0, 0);
+     -moz-transform: translate(0, 0);
+      -ms-transform: translate(0, 0);
+       -o-transform: translate(0, 0);
+          transform: translate(0, 0);
+}
+
+.path {
+  stroke: #999;
+  stroke-opacity: .6;
+}
+  .legend {
+    font-size: 12px;
+  }
+  rect {
+    stroke-width: 2;
+  }
+	
+</style>
+
+<body>
+<div id="slider">
+<h1> Select traffic levels from last <span id="range">0</span> hours ago </h1> 
+<h2>Hours:</h2>
+<input style="width: 200px" type="range" min="0" max="24" value="0" step="1" onchange="showValue(this.value)" />
+</div>
+<div id="d3js">
+</div>
+<div id="graph">
+</div>
+
+<script>
+// d3js 
+links =
+[
+
+{'r_ip': '10.10.10.45', 'l_int': 'ae0.2521', 'target': 'bdr2.siteA', 'metric': '500', 'source': 'bdr3.siteA', 'r_int': '377', 'l_ip': '10.10.10.44'}, 
+{'r_ip': '10.10.10.43', 'l_int': 'ae0.2520', 'target': 'bdr1.siteA', 'metric': '500', 'source': 'bdr3.siteA', 'r_int': '329', 'l_ip': '10.10.10.42'}, 
+{'r_ip': '10.10.10.28', 'l_int': 'ae0.2515', 'target': 'bdr3.siteB', 'metric': '1000', 'source': 'bdr3.siteA', 'r_int': '352', 'l_ip': '10.10.10.29'}, 
+{'r_ip': '10.10.10.39', 'l_int': 'ae0.2518', 'target': 'bdr2.siteB', 'metric': '500', 'source': 'bdr3.siteB', 'r_int': '336', 'l_ip': '10.10.10.38'}, 
+{'r_ip': '10.10.10.37', 'l_int': 'ae0.2517', 'target': 'bdr1.siteB', 'metric': '500', 'source': 'bdr3.siteB', 'r_int': '336', 'l_ip': '10.10.10.36'}, 
+{'r_ip': '10.10.10.29', 'l_int': 'ae0.2515', 'target': 'bdr3.siteA', 'metric': '1000', 'source': 'bdr3.siteB', 'r_int': '329', 'l_ip': '10.10.10.28'}, 
+{'r_ip': '10.10.10.38', 'l_int': 'ae2.2518', 'target': 'bdr3.siteB', 'metric': '500', 'source': 'bdr2.siteB', 'r_int': '324', 'l_ip': '10.10.10.39'}, 
+{'r_ip': '10.10.10.11', 'l_int': 'ae2.2506', 'target': 'agg1.siteB', 'metric': '99500', 'source': 'bdr2.siteB', 'r_int': '632', 'l_ip': '10.10.10.10'}, 
+{'r_ip': '10.10.10.9', 'l_int': 'ae2.2505', 'target': 'bdr1.siteA', 'metric': '1000', 'source': 'bdr2.siteB', 'r_int': '356', 'l_ip': '10.10.10.8'}, 
+{'r_ip': '10.10.10.7', 'l_int': 'ae2.2504', 'target': 'bdr2.siteA', 'metric': '1000', 'source': 'bdr2.siteB', 'r_int': '343', 'l_ip': '10.10.10.6'}, 
+{'r_ip': '10.10.10.2', 'l_int': 'ae2.2502', 'target': 'bdr1.siteB', 'metric': '500', 'source': 'bdr2.siteB', 'r_int': '337', 'l_ip': '10.10.10.3'}, 
+{'r_ip': '10.10.10.36', 'l_int': 'ae2.2517', 'target': 'bdr3.siteB', 'metric': '500', 'source': 'bdr1.siteB', 'r_int': '325', 'l_ip': '10.10.10.37'}, 
+{'r_ip': '10.10.10.5', 'l_int': 'ae2.2503', 'target': 'agg2.siteB', 'metric': '99500', 'source': 'bdr1.siteB', 'r_int': '793', 'l_ip': '10.10.10.4'}, 
+{'r_ip': '10.10.10.3', 'l_int': 'ae2.2502', 'target': 'bdr2.siteB', 'metric': '500', 'source': 'bdr1.siteB', 'r_int': '339', 'l_ip': '10.10.10.2'}, 
+{'r_ip': '10.10.10.1', 'l_int': 'ae2.2501', 'target': 'bdr1.siteA', 'metric': '1000', 'source': 'bdr1.siteB', 'r_int': '357', 'l_ip': '10.10.10.0'}, 
+{'r_ip': '10.10.10.44', 'l_int': 'ae2.2521', 'target': 'bdr3.siteA', 'metric': '500', 'source': 'bdr2.siteA', 'r_int': '327', 'l_ip': '10.10.10.45'}, 
+{'r_ip': '10.10.10.26', 'l_int': 'ae2.2514', 'target': 'bdr1.siteA', 'metric': '500', 'source': 'bdr2.siteA', 'r_int': '344', 'l_ip': '10.10.10.27'}, 
+{'r_ip': '10.10.10.22', 'l_int': 'ae2.2512', 'target': 'agg1.siteA', 'metric': '99500', 'source': 'bdr2.siteA', 'r_int': '354', 'l_ip': '10.10.10.23'}, 
+{'r_ip': '10.10.10.6', 'l_int': 'ae2.2504', 'target': 'bdr2.siteB', 'metric': '1000', 'source': 'bdr2.siteA', 'r_int': '338', 'l_ip': '10.10.10.7'}, 
+{'r_ip': '10.10.10.8', 'l_int': 'ae2.2505', 'target': 'bdr2.siteB', 'metric': '1000', 'source': 'bdr1.siteA', 'r_int': '337', 'l_ip': '10.10.10.9'}, 
+{'r_ip': '10.10.10.42', 'l_int': 'ae2.2520', 'target': 'bdr3.siteA', 'metric': '500', 'source': 'bdr1.siteA', 'r_int': '328', 'l_ip': '10.10.10.43'}, 
+{'r_ip': '10.10.10.27', 'l_int': 'ae2.2514', 'target': 'bdr2.siteA', 'metric': '500', 'source': 'bdr1.siteA', 'r_int': '341', 'l_ip': '10.10.10.26'}, 
+{'r_ip': '10.10.10.24', 'l_int': 'ae2.2513', 'target': 'agg2.siteA', 'metric': '99500', 'source': 'bdr1.siteA', 'r_int': '902', 'l_ip': '10.10.10.25'}, 
+{'r_ip': '10.10.10.0', 'l_int': 'ae2.2501', 'target': 'bdr1.siteB', 'metric': '1000', 'source': 'bdr1.siteA', 'r_int': '338', 'l_ip': '10.10.10.1'}, 
+
+{'r_ip': '10.10.10.17', 'l_int': 'ae2.2509', 'target': 'agg1.siteB', 'metric': '500', 'source': 'agg2.siteB', 'r_int': '591', 'l_ip': '10.10.10.16'}, 
+{'r_ip': '10.10.10.15', 'l_int': 'ae2.2508', 'target': 'agg1.siteA', 'metric': '1000', 'source': 'agg2.siteB', 'r_int': '410', 'l_ip': '10.10.10.14'}, 
+{'r_ip': '10.10.10.13', 'l_int': 'ae2.2507', 'target': 'agg2.siteA', 'metric': '1000', 'source': 'agg2.siteB', 'r_int': '1003', 'l_ip': '10.10.10.12'}, 
+{'r_ip': '10.10.10.4', 'l_int': 'ae2.2503', 'target': 'bdr1.siteB', 'metric': '99500', 'source': 'agg2.siteB', 'r_int': '375', 'l_ip': '10.10.10.5'}, 
+
+{'r_ip': '10.10.10.19', 'l_int': 'ae2.2510', 'target': 'agg1.siteA', 'metric': '1000', 'source': 'agg1.siteB', 'r_int': '391', 'l_ip': '10.10.10.18'}, 
+{'r_ip': '10.10.10.16', 'l_int': 'ae2.2509', 'target': 'agg2.siteB', 'metric': '500', 'source': 'agg1.siteB', 'r_int': '678', 'l_ip': '10.10.10.17'}, 
+{'r_ip': '10.10.10.10', 'l_int': 'ae2.2506', 'target': 'bdr2.siteB', 'metric': '99500', 'source': 'agg1.siteB', 'r_int': '366', 'l_ip': '10.10.10.11'},
+
+ {'r_ip': '10.10.10.25', 'l_int': 'ae2.2513', 'target': 'bdr1.siteA', 'metric': '99500', 'source': 'agg2.siteA', 'r_int': '352', 'l_ip': '10.10.10.24'},
+ {'r_ip': '10.10.10.20', 'l_int': 'ae2.2511', 'target': 'agg1.siteA', 'metric': '500', 'source': 'agg2.siteA', 'r_int': '374', 'l_ip': '10.10.10.21'},
+ {'r_ip': '10.10.10.12', 'l_int': 'ae2.2507', 'target': 'agg2.siteB', 'metric': '1000', 'source': 'agg2.siteA', 'r_int': '786', 'l_ip': '10.10.10.13'}, 
+ 
+ {'r_ip': '10.10.10.23', 'l_int': 'ae2.2512', 'target': 'bdr2.siteA', 'metric': '99500', 'source': 'agg1.siteA', 'r_int': '342', 'l_ip': '10.10.10.22'}, 
+ {'r_ip': '10.10.10.21', 'l_int': 'ae2.2511', 'target': 'agg2.siteA', 'metric': '500', 'source': 'agg1.siteA', 'r_int': '903', 'l_ip': '10.10.10.20'}, 
+ {'r_ip': '10.10.10.18', 'l_int': 'ae2.2510', 'target': 'agg1.siteB', 'metric': '1000', 'source': 'agg1.siteA', 'r_int': '590', 'l_ip': '10.10.10.19'}, 
+ {'r_ip': '10.10.10.14', 'l_int': 'ae2.2508', 'target': 'agg2.siteB', 'metric': '1000', 'source': 'agg1.siteA', 'r_int': '784', 'l_ip': '10.10.10.15'},
+ 
+ 
+
+
+]
+
+
+var nodes = [
+    { name: 'agg1.siteB' ,x:   150, y: 250 },
+	{ name: 'agg2.siteB' ,x:   150, y: 50 },
+    { name: 'bdr3.siteB' ,x:   50, y: 200 },
+	{ name: 'bdr1.siteB' ,x:   230, y: 100 },
+	{ name: 'bdr2.siteB' ,x:   230, y: 330 },
+
+
+    { name: 'agg1.siteA' ,x:   360, y: 250 },
+	{ name: 'agg2.siteA' ,x:   360, y: 50 },
+    { name: 'bdr3.siteA' ,x:   600, y: 200 },
+	{ name: 'bdr1.siteA' ,x:   450, y: 100 },
+	{ name: 'bdr2.siteA' ,x:   450, y: 330 }
+
+];
+
+// append node to links DOM. need a better way of doing this 
+
+links.forEach(function(l) {
+
+var keyToFind = l.source;
+for(var i in nodes){
+    if(nodes[i].name == l.source){
+		l.source = {name: l.source , x : nodes[i].x , y: nodes[i].y}
+        break; 
+    }
+}
+for(var i in nodes){
+    if(nodes[i].name == l.target){
+	   	l.target = {name: l.target , x : nodes[i].x , y: nodes[i].y}
+        break; 
+	}
+}
+
+});
+
+//color 
+var color = d3.scale.category20();
+
+
+var width = 850,
+    height = 400;
+
+
+//svg object
+var svg = d3.select("#d3js")
+			.append("svg")
+			.attr("width", width)
+			.attr("height", height);
+//link and nodes
+var link = svg.selectAll(".link"),
+    node = svg.selectAll(".node");
+
+
+//create links 
+
+link = link.data(links)
+    .enter()
+		.append("g")
+		.attr("class","pathG")
+			.append("svg:path")			
+				.attr("class", "path")
+				.style("stroke",function(d) { return get_util(d,"0"); })
+				.style("fill","none")
+				.style("stroke-linecap","butt")
+				.style("stroke-width", "3") //function(d) { return (d.capacity); }) //add capacity later
+				.attr("id",function(d,i) { return "linkId_" + i; })
+				.attr("d", function(d) {
+							//find middle value of the link and calculate path
+							var dx = d.target.x - d.source.x,
+							    dy = d.target.y - d.source.y,
+							    dr = Math.sqrt(dx * dx + dy * dy);
+							
+						    var endX = (d.target.x + d.source.x) / 2;
+						    var endY = (d.target.y + d.source.y) / 2;
+							
+							var len = dr - ((dr/2) * Math.sqrt(3));
+							endX = endX + (1 * len/dr);
+							endY = endY + (-1 * len/dr);
+							
+						return "M" + d.source.x + "," + d.source.y + "L" + endX + "," + endY;
+							} )
+				.on("click", function(d){ graph(d.source.name,d.l_int) }); // create ploty graph on click
+				
+var pathtext =	svg.selectAll(".pathG")
+			.append("text")
+				.append("textPath")
+				.attr( "fill-opacity", 1 )
+				.style("text-anchor","middle")
+				.style("font-size", "6px")
+				.attr("dy",0)
+				.attr("startOffset","50%")
+				.attr("xlink:href",function(d,i) { return "#linkId_" + i;})
+				.text(function(d) { return d.metric });				
+
+node = node.data(nodes)
+    .enter()
+	.append("svg:g")
+	
+node.append("circle")
+      .attr("class", "node")
+      .attr("r", 12)
+	  .attr("cx", function(d) { return d.x; })
+      .attr("cy", function(d) { return d.y; })
+	  .style("fill", function(d) { return color(d.name.slice(-3)); })
+	  .on("mouseout",clear_graph)
+	  //.on("click", function(d){ graph(d.name,"tbd")}) //create node graph maybe pfe statistics ... in the future
+
+	node.append("text")
+	  .attr("x", function(d) { return d.x; })
+      .attr("y", function(d) { return d.y; })
+		.attr("dy", ".35em")
+		.attr("class","nodelabel")
+		.style("font-size", "12px")
+		.text(function(d) { return d.name; });
+
+//static legend , need a better way for this 
+legendValues = [ 
+				{'value':'refBW 10Gbps','color':'white','y':'5'}, 
+				{'value':'No Data','color':'#999','y':'30'},
+				{'value':'Down','color':'black','y':'55'},
+				{'value':'0%-1%','color':'blue','y':'80'},
+				{'value':'1%-30%','color':'green','y':'105'},
+				{'value':'30%-50%','color':'yellow','y':'130'},
+				{'value':'50%-70%','color':'orange','y':'155'},
+				{'value':'70%-100%','color':'red','y':'180'},
+				
+				]
+		
+		
+		
+
+var legendRectSize = 20;                                  
+var legendSpacing = 5;                                    
+var legend = svg.selectAll('.legend')                     
+  .data(legendValues)                                   
+  .enter()                                              
+  .append('g')                                          
+  .attr('class', 'legend')                              
+  .attr('transform', function(d, i) {                   
+	return 'translate(' + 700 + ',' + d.y + ')';        
+  });                                                   
+legend.append('rect')                                   
+  .attr('width', legendRectSize)                        
+  .attr('height', legendRectSize)                         
+  .style('fill', function(d) { return d.color})                                   
+  .style('stroke', function(d) { return d.color}) ;                               
+legend.append('text')                                     
+  .attr('x', legendRectSize + legendSpacing)              
+  .attr('y', legendRectSize - legendSpacing)              
+  .text(function(d) { return d.value; });                      
+  
+//update links color 5m
+var inter = setInterval(function() {
+                updateData5m();
+        }, 300000); 
+
+function updateData5m() {
+ var svg = d3.select("#d3js").selectAll("path").transition();	
+ console.log("Update happending")
+		link = link.data(links)
+				.style("stroke",function(d) { return get_util(d,"0"); })
+ }
+
+
+d3.select("#slider").select("input").on("input", function() {
+	  start = this.value
+	  link = link.data(links)
+			 .style("stroke",function(d) { return get_util(d,start); })
+	});  
+
+//get util fct 
+function get_util(d,start) {
+	var refbw = 10000000000
+	
+	// need a better way for this 
+	var legend = [ {'id':'black','low':0,'high':0},
+				   {'id':'blue','low':0,'high':refbw*0.1},
+				   {'id':'green','low':refbw*0.1,'high':refbw*0.3},
+				   {'id':'yellow','low':refbw*0.3,'high':refbw*0.5},
+				   {'id':'orange','low':refbw*05,'high':refbw*0.7},
+				   {'id':'red','low':refbw*0.7,'high':refbw},
+				   {'id':'pink','low':refbw,'high':refbw*refbw}
+				   
+				   
+				   ]
+	url = "http://10.20.20.20:5000/util?"+"ip="+d.l_int+"&"+"host="+d.source.name+"&"+"start="+start
+	/* uncomment this when running 
+	var util = $.ajax({type: "GET", url: url, async: false}).responseText;
+	*/
+	util = "just a value so example on github will work uncomment above in production"
+
+	legend.forEach(function (d) { 
+		if (util >= d.low && util <= d.high) 
+			{ 
+			util = d.id ; 
+			console.log(util)
+			}
+		}
+	)
+	//need a better way , if util has mode then 6 char mean the server has return some html error thus the loop exits without setting the color 
+	if (util.length > 6 )
+	{ util = "#999"}
+
+	return util
+}
+
+
+// end d3js
+
+// show slidebar values used by div slider
+function showValue(newValue)
+{
+	document.getElementById("range").innerHTML=newValue;
+}
+
+//clear graph fct used on mouseover on nodes
+function clear_graph() {
+  $('#graph').remove(); 
+  $('body').append('<div id="graph"></div>');
+}
+function graph(source,interface) { 
+//clear old before drawing new
+  $('#graph').remove(); 
+  $('body').append('<div id="graph"></div>');
+
+//ploty
+/// create ploty graph 
+var rawDataURL = "http://10.20.20.20:5000/graph?"+"ip="+interface+"&"+"host="+source
+//// map the fields 
+var xField = 'time';
+var yField = 'bps';
+/// create selector 
+var selectorOptions = {
+    buttons: [{
+        step: 'minute',
+        stepmode: 'backward',
+        count: 30,
+        label: '30m'
+    }, {
+        step: 'hour',
+        stepmode: 'backward',
+        count: 1,
+        label: '1h'
+    }, {
+        step: 'hour',
+        stepmode: 'todate',
+        count: 6,
+        label: '6h'
+    }, {
+        step: 'hour',
+        stepmode: 'todate',
+        count: 12,
+        label: '12h'
+    }, {
+        step: 'hours',
+        stepmode: 'backward',
+        count: 24,
+        label: '24h'
+    }, {
+        step: 'all',
+    }],
+};
+////prepare the graph
+Plotly.d3.csv(rawDataURL, function(err, rawData) {
+    if(err) throw err;
+    var data = prepData(rawData);
+    var layout = {
+		showlegend: true,
+		autoresize: false,
+		width: 850,
+		height: 400,
+        title: 'Router: ' + source + '  Interface: '+ interface ,
+        xaxis: {
+            rangeselector: selectorOptions,
+            rangeslider: {},
+			type: 'date',
+			title: 'Time',
+        },
+        yaxis: {
+			autotick: true,
+			autorange: true,
+			tickformat: ".3s",
+			title: 'bps'
+        }
+    };
+
+    Plotly.plot('graph', data, layout);
+});
+////prepare the data
+function prepData(rawData) {
+    var x = [];
+    var y = [];
+
+    rawData.forEach(function(datum, i) {
+
+        x.push(new Date(datum[xField]));
+        y.push(datum[yField]);
+    });
+
+    return [{
+		mode: 'lines',
+		connectgaps: 'false',
+		fill: 'tonexty',
+		line: { width: 1 , shape: 'spline' , color: 'rgb(153, 204, 255)' },
+		name: interface + ' outbound',
+        x: x,
+        y: y
+    }];
+
+}
+
+}
+</script>
+</body>
+</html>
